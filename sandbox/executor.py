@@ -30,7 +30,7 @@ class SandboxExecutor:
     def __init__(self):
         pass
 
-    def run(self, command: str, limits: ResourceLimits = ResourceLimits()) -> CommandResult:
+    def run(self, command: str, repo_path: str, limits: ResourceLimits = ResourceLimits()) -> CommandResult:
         """
         Runs a command in the sandbox.
         ENFORCES:
@@ -40,6 +40,11 @@ class SandboxExecutor:
         - Command allowlist
         - Secret scanning on output
         """
+        
+        from sandbox.docker_utils import ensure_sandbox_image
+        
+        # 0. Ensure Image
+        ensure_sandbox_image(self.IMAGE_NAME)
         
         # 1. Validate Command
         if not is_command_allowed(command):
@@ -63,8 +68,10 @@ class SandboxExecutor:
                                                     # Actually, --cpus sets capacity. For strict time limit we use 'timeout' command externally or Popen timeout.
                                                     # Let's use Popen timeout for wall-clock.
             f"--memory={limits.memory_bytes}b",        # Bible V Section 5: Memory limit
+            f"--memory={limits.memory_bytes}b",        # Bible V Section 5: Memory limit
             # Mount workspace (Volume handling would go here in real impl, assuming mapped)
              "-w", "/workspace",
+             "-v", f"{repo_path}:/workspace", # Bind mount the repository
             self.IMAGE_NAME,
             "/bin/bash", "-c", command
         ]

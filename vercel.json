@@ -1,0 +1,31 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "api/app.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "api/app.py"
+        },
+        {
+            "src": "/agent/(.*)",
+            "dest": "api/app.py"
+        },
+        {
+            "src": "/health",
+            "dest": "api/app.py"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/ui/dist/$1"
+        }
+    ],
+    "env": {
+        "KITA_ENV": "production",
+        "LOG_LEVEL": "INFO"
+    }
+}

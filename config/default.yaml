@@ -1,0 +1,65 @@
+# Kita.dev Default Configuration
+# Bible II, Section 10: Configuration
+# Appendix D: Cost, Token & Compute Budget Law
+
+# Agent Behavior
+agent:
+  max_retries: 3              # Bible III Section 7: Default max retries
+  confidence_threshold: 0.6   # Bible III Section 8: Low confidence -> STOP
+  
+# Budget Limits (Appendix D, Section 3: Default Budgets)
+budgets:
+  tokens:
+    default: 120000           # Default token budget per task
+    ceiling: 250000           # Absolute maximum (never exceeded)
+  cpu:
+    default_seconds: 120      # Default CPU time
+    ceiling_seconds: 300      # Absolute maximum
+  timeout:
+    default_seconds: 600      # 10 minutes wall-clock
+    ceiling_seconds: 1200     # 20 minutes absolute max
+  memory:
+    default_bytes: 2147483648 # 2 GB
+    ceiling_bytes: 4294967296 # 4 GB
+
+# Sandbox Configuration (Bible V)
+sandbox:
+  image: "kita-sandbox:latest"
+  user: "sandbox_user"
+  network: "none"             # Bible V Section 4: Network disabled
+  read_only: true             # Bible V Section 3: Read-only root
+  
+# Context Limits
+context:
+  max_file_size_bytes: 20000  # Skip files larger than 20KB
+  max_content_length: 1000    # Truncate content after 1000 chars
+  token_budget: 50000         # Context token budget for LLM
+
+# Supported Languages (Appendix F)
+languages:
+  primary:
+    - python
+  secondary:
+    - javascript
+    - typescript
+
+# GitHub Integration (Bible VI)
+github:
+  commands:
+    - "@kita implement this"
+    - "@kita retry"
+    - "@kita retry with constraints"
+    - "@kita explain plan"
+    - "@kita stop"
+
+# Release Gates (Appendix C)
+release_gates:
+  min_completion_rate: 0.50
+  min_stop_rate: 0.05
+  max_stop_rate: 0.40
+  max_retry_rate: 1.5
+
+# Logging
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

@@ -1,3 +1,5 @@
 third_party/
 guidelines/
 .env
+venv/
+__pycache__

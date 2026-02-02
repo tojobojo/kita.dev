@@ -1,0 +1,102 @@
+# =============================================================================
+# Kita.dev Docker Compose - Development
+# =============================================================================
+# Usage: docker-compose up --build
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # API Service (FastAPI Backend)
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kita-api
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      - KITA_ENV=${KITA_ENV:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - USE_MOCK_LLM=${USE_MOCK_LLM:-true}
+      - GITHUB_APP_ID=${GITHUB_APP_ID:-}
+      - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY:-}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
+      - MAX_TOKENS_PER_TASK=${MAX_TOKENS_PER_TASK:-100000}
+      - MAX_COST_PER_TASK=${MAX_COST_PER_TASK:-5.0}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
+    volumes:
+      # Mount for hot-reloading during development
+      - ./agent:/app/agent:ro
+      - ./api:/app/api:ro
+      - ./config:/app/config:ro
+      - ./prompts:/app/prompts:ro
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - kita-network
+
+  # ---------------------------------------------------------------------------
+  # UI Service (Vite Dev Server) - Development Only
+  # ---------------------------------------------------------------------------
+  ui:
+    image: node:20-alpine
+    container_name: kita-ui
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./ui:/app
+      - /app/node_modules # Preserve node_modules in container
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    depends_on:
+      - api
+    networks:
+      - kita-network
+    profiles:
+      - dev # Only runs with: docker-compose --profile dev up
+
+  # ---------------------------------------------------------------------------
+  # Sandbox Service (Isolated Execution Environment)
+  # ---------------------------------------------------------------------------
+  sandbox:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile
+    container_name: kita-sandbox
+    # Security: Network isolation and read-only
+    network_mode: none
+    read_only: true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    tmpfs:
+      - /tmp:size=100M # Writable temp directory
+    volumes:
+      - sandbox-workspace:/workspace
+    profiles:
+      - sandbox # Only runs when explicitly needed
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  kita-network:
+    driver: bridge
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  sandbox-workspace:
+    driver: local

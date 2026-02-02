@@ -1,0 +1,178 @@
+/* Config Page Styles - Fully Responsive */
+
+.config-page {
+    text-align: left;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--bg-secondary);
+    padding: 0.25rem;
+    border-radius: 8px;
+    width: fit-content;
+}
+
+.view-toggle button {
+    padding: 0.4rem 0.75rem;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+
+.view-toggle button.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+.config-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    margin-bottom: var(--spacing-md);
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.config-info code {
+    background: var(--bg-primary);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    word-break: break-all;
+}
+
+.raw-config {
+    background: var(--bg-primary);
+    padding: var(--spacing-sm);
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Fira Code', monospace;
+    font-size: clamp(0.7rem, 2vw, 0.85rem);
+    line-height: 1.5;
+    margin: 0;
+    max-height: 400px;
+}
+
+.config-tree {
+    font-size: 0.85rem;
+}
+
+.config-group {
+    margin-bottom: var(--spacing-sm);
+}
+
+.config-group-header {
+    font-weight: 600;
+    color: var(--accent-color);
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.config-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.config-key {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.config-value {
+    font-family: monospace;
+    color: var(--success-color);
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+/* Config Sections Grid - Mobile First */
+.config-sections {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.config-section {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: var(--spacing-sm);
+}
+
+.config-section h3 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 0.95rem;
+}
+
+.section-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.section-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.section-item code {
+    color: var(--accent-color);
+    font-family: monospace;
+}
+
+.section-item .check {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+/* Tablet breakpoint */
+@media (min-width: 768px) {
+    .config-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .config-sections {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
+
+    .config-section {
+        padding: 1.25rem;
+    }
+
+    .view-toggle button {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Desktop breakpoint */
+@media (min-width: 1024px) {
+    .config-sections {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .raw-config {
+        padding: 1.5rem;
+        max-height: 500px;
+    }
+}

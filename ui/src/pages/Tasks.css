@@ -1,0 +1,231 @@
+/* Tasks Page Styles - Fully Responsive */
+
+.tasks-page {
+    text-align: left;
+}
+
+.page-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.back-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.back-link:hover {
+    color: var(--accent-color);
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+/* Filters - Mobile First */
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.filter-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 20px;
+    flex: 1;
+    min-width: fit-content;
+}
+
+.filter-btn.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+/* Tasks Container - Mobile Stack */
+.tasks-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    min-height: 400px;
+}
+
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.task-item {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: var(--spacing-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.task-item:hover {
+    border-color: var(--accent-color);
+}
+
+.task-item.selected {
+    border-color: var(--accent-color);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.task-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.task-id {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.task-description {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+.task-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Task Detail Panel */
+.task-detail {
+    display: none;
+}
+
+.task-detail.visible {
+    display: block;
+}
+
+.task-detail h2 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+    font-size: clamp(1rem, 3vw, 1.25rem);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.detail-item label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.detail-item code {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--accent-color);
+    word-break: break-all;
+}
+
+.detail-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.task-full-description {
+    background: var(--bg-primary);
+    padding: var(--spacing-sm);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+    word-break: break-word;
+}
+
+/* Tablet breakpoint */
+@media (min-width: 768px) {
+    .page-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .filters {
+        flex-wrap: nowrap;
+    }
+
+    .filter-btn {
+        flex: initial;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .tasks-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-md);
+    }
+
+    .tasks-list {
+        max-height: 600px;
+    }
+
+    .task-meta {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .task-detail {
+        display: block;
+        position: sticky;
+        top: 1rem;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Desktop breakpoint */
+@media (min-width: 1024px) {
+    .task-item {
+        padding: 1rem;
+    }
+
+    .task-description {
+        font-size: 1rem;
+    }
+}

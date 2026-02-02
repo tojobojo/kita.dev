@@ -9,24 +9,25 @@ class TestStateMachine(unittest.TestCase):
         self.assertEqual(self.sm.current_state, AgentState.IDLE)
 
     def test_valid_transitions(self):
-        # Happy path trace (Bible IV Section 7 success trace roughly)
+        # Happy path trace following Bible IV state machine
+        # IDLE -> RECEIVED_TASK -> NORMALIZED -> CONTEXT_BUILDING -> CONTEXT_READY -> PLANNING -> ...
         self.sm.transition_to(AgentState.RECEIVED_TASK, "Task received")
         self.assertEqual(self.sm.current_state, AgentState.RECEIVED_TASK)
 
         self.sm.transition_to(AgentState.NORMALIZED, "Task normalized")
         self.assertEqual(self.sm.current_state, AgentState.NORMALIZED)
 
-        self.sm.transition_to(AgentState.PLANNING, "Starting planning")
-        self.assertEqual(self.sm.current_state, AgentState.PLANNING)
-
-        self.sm.transition_to(AgentState.PLAN_VALIDATED, "Plan validated")
-        self.assertEqual(self.sm.current_state, AgentState.PLAN_VALIDATED)
-
         self.sm.transition_to(AgentState.CONTEXT_BUILDING, "Building context")
         self.assertEqual(self.sm.current_state, AgentState.CONTEXT_BUILDING)
         
         self.sm.transition_to(AgentState.CONTEXT_READY, "Context ready")
         self.assertEqual(self.sm.current_state, AgentState.CONTEXT_READY)
+
+        self.sm.transition_to(AgentState.PLANNING, "Starting planning")
+        self.assertEqual(self.sm.current_state, AgentState.PLANNING)
+
+        self.sm.transition_to(AgentState.PLAN_VALIDATED, "Plan validated")
+        self.assertEqual(self.sm.current_state, AgentState.PLAN_VALIDATED)
 
         self.sm.transition_to(AgentState.EXECUTING_STEP, "Executing step")
         self.assertEqual(self.sm.current_state, AgentState.EXECUTING_STEP)

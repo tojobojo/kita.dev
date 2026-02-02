@@ -1,0 +1,113 @@
+# =============================================================================
+# Kita.dev Docker Compose - Production
+# =============================================================================
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Traefik Reverse Proxy (handles SSL, routing)
+  # ---------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.0
+    container_name: kita-traefik
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # Redirect HTTP to HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "letsencrypt:/letsencrypt"
+    networks:
+      - kita-network
+    restart: always
+
+  # ---------------------------------------------------------------------------
+  # Kita.dev API + UI (Production Build)
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kita-api
+    environment:
+      - KITA_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JSON_LOGS=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - USE_MOCK_LLM=false
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+      - MAX_TOKENS_PER_TASK=${MAX_TOKENS_PER_TASK:-100000}
+      - MAX_COST_PER_TASK=${MAX_COST_PER_TASK:-5.0}
+      - API_KEY=${API_KEY:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - ENABLE_METRICS=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kita.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.kita.entrypoints=websecure"
+      - "traefik.http.routers.kita.tls.certresolver=letsencrypt"
+      - "traefik.http.services.kita.loadbalancer.server.port=8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+    networks:
+      - kita-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+
+  # ---------------------------------------------------------------------------
+  # Sandbox Service (Isolated Execution)
+  # ---------------------------------------------------------------------------
+  sandbox:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile
+    container_name: kita-sandbox
+    network_mode: none
+    read_only: true
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    tmpfs:
+      - /tmp:size=100M
+    volumes:
+      - sandbox-workspace:/workspace
+    restart: "no" # Managed by API
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  kita-network:
+    driver: bridge
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  letsencrypt:
+    driver: local
+  sandbox-workspace:
+    driver: local

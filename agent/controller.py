@@ -8,6 +8,8 @@ from agent.executor import AgentExecutor
 from agent.reflection import ReflectionEngine, Decision
 from agent.confidence import ConfidenceEvaluator
 from context.indexer import RepoIndexer
+from context.language_detector import LanguageDetector
+from guardrails.validators import TaskValidator
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +27,13 @@ class AgentController:
         self.reflection = ReflectionEngine()
         self.confidence = ConfidenceEvaluator()
         self.indexer = RepoIndexer()
+        self.language_detector = LanguageDetector()
+        self.task_validator = TaskValidator()
         
         # Runtime state
         self.current_plan: Optional[Plan] = None
         self.execution_history = [] # List of ExecutionResults
+        self.detected_language: Optional[str] = None
 
     def run(self, task: str, repo_path: str) -> AgentState:
         """
@@ -39,29 +44,50 @@ class AgentController:
             # 1. Start -> RECEIVED_TASK
             self.state_machine.transition_to(AgentState.RECEIVED_TASK, "Task received")
             
-            # 2. Normalize (No-op in V0 skeleton) -> NORMALIZED
+            # 2. Normalize -> NORMALIZED
+            # Includes task validation (Bible III soft checks)
+            validation = self.task_validator.validate_task(task)
+            if not validation.passed:
+                logger.warning(f"Task validation failed: {validation.blockers}")
+                self.state_machine.transition_to(AgentState.NORMALIZED, "Task normalized (with warnings)")
+                self.state_machine.transition_to(AgentState.STOPPED_SAFE, f"Task validation failed: {validation.blockers}")
+                return AgentState.STOPPED_SAFE
             self.state_machine.transition_to(AgentState.NORMALIZED, "Task normalized")
             
-            # 3. Plan
-            self.state_machine.transition_to(AgentState.PLANNING, "Starting planning")
-            try:
-                self.current_plan = self.planner.generate_plan(task)
-                self.state_machine.transition_to(AgentState.PLAN_VALIDATED, "Plan generated and validated")
-            except Exception as e:
-                logger.error(f"Planning failed: {e}")
-                self.state_machine.transition_to(AgentState.STOPPED_SAFE, f"Planning failure: {e}")
-                return AgentState.STOPPED_SAFE
-            
-            # 4. Context
+            # 3. Context Building (Index + Language Detection per Appendix F)
             self.state_machine.transition_to(AgentState.CONTEXT_BUILDING, "Indexing repository")
+            repo_context = ""
             try:
-                self.indexer.index(repo_path)
+                # Language detection first (Appendix F)
+                lang_result = self.language_detector.detect(repo_path)
+                self.detected_language = lang_result.primary_language
+                
+                if not lang_result.supported:
+                    logger.warning(f"Unsupported language: {lang_result.reason}")
+                    self.state_machine.force_error_stop(f"Unsupported language: {lang_result.reason}")
+                    return AgentState.STOPPED_ERROR
+                
+                logger.info(f"Detected language: {lang_result.primary_language} (confidence: {lang_result.confidence:.2f})")
+                
+                # Index repository
+                repo_context = self.indexer.index(repo_path)
                 self.state_machine.transition_to(AgentState.CONTEXT_READY, "Context indexed")
             except Exception as e:
                 # Context failure -> Error
                 logger.error(f"Context build failed: {e}")
                 self.state_machine.force_error_stop(f"Context failure: {e}")
                 return AgentState.STOPPED_ERROR
+
+            # 4. Plan (Now with Context)
+            self.state_machine.transition_to(AgentState.PLANNING, "Starting planning")
+            try:
+                self.current_plan = self.planner.generate_plan(task, repo_context)
+                self.state_machine.transition_to(AgentState.PLAN_VALIDATED, "Plan generated and validated")
+            except Exception as e:
+                logger.error(f"Planning failed: {e}")
+                self.state_machine.transition_to(AgentState.STOPPED_SAFE, f"Planning failure: {e}")
+                return AgentState.STOPPED_SAFE
+
 
             # 5. Execution Loop
             self.state_machine.transition_to(AgentState.EXECUTING_STEP, "Starting execution loop")
@@ -84,7 +110,7 @@ class AgentController:
                         # Should not happen in linear flow
                         pass
 
-                result = self.executor.execute_step(step)
+                result = self.executor.execute_step(step, repo_path)
                 self.execution_history.append(result)
                 
                 if result.success:
@@ -169,3 +195,19 @@ class AgentController:
             logger.critical(f"Unhandled Exception: {e}")
             self.state_machine.force_error_stop(str(e))
             return AgentState.STOPPED_ERROR
+
+    def get_history(self):
+        """
+        Returns the execution history and state machine transitions.
+        """
+        return {
+            "state": self.state_machine.current_state.value,
+            "transitions": self.state_machine._execution_history,
+            "execution_steps": [
+                {
+                    "success": res.success,
+                    "output": res.output,
+                    "error": res.error
+                } for res in self.execution_history
+            ]
+        }

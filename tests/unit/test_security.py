@@ -1,4 +1,5 @@
 import unittest
+import tempfile
 from unittest.mock import patch, MagicMock
 from sandbox.limits import ResourceLimits
 from guardrails.secrets import SecretDetector, SecurityError
@@ -43,12 +44,14 @@ class TestSecurity(unittest.TestCase):
             unsafe_limits.validate()
 
     # --- Sandbox: Executor ---
+    @patch('sandbox.docker_utils.ensure_sandbox_image')
     @patch('subprocess.run')
-    def test_sandbox_run_success(self, mock_run):
+    def test_sandbox_run_success(self, mock_run, mock_ensure_image):
         mock_run.return_value = MagicMock(returncode=0, stdout="hello", stderr="")
         
         executor = SandboxExecutor()
-        result = executor.run("echo hello")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = executor.run("echo hello", tmpdir)
         
         self.assertEqual(result.exit_code, 0)
         self.assertEqual(result.stdout, "hello")
@@ -63,19 +66,23 @@ class TestSecurity(unittest.TestCase):
 
     def test_sandbox_run_blocked(self):
         executor = SandboxExecutor()
-        with self.assertRaises(SecurityViolation):
-            executor.run("curl google.com")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with self.assertRaises(SecurityViolation):
+                executor.run("curl google.com", tmpdir)
 
+    @patch('sandbox.docker_utils.ensure_sandbox_image')
     @patch('subprocess.run')
-    def test_sandbox_output_redaction(self, mock_run):
+    def test_sandbox_output_redaction(self, mock_run, mock_ensure_image):
         # Simulate command returning a secret
         mock_run.return_value = MagicMock(returncode=0, stdout="KEY=AKIA1234567890123456", stderr="")
         
         executor = SandboxExecutor()
-        result = executor.run("echo safe_command_but_unsafe_output")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = executor.run("echo safe_command_but_unsafe_output", tmpdir)
         
         self.assertEqual(result.exit_code, -2) # Security violation code
         self.assertIn("REDACTED", result.stdout)
 
 if __name__ == '__main__':
     unittest.main()
+

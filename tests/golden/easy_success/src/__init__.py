@@ -1,0 +1,1 @@
+"""Easy Success package."""
