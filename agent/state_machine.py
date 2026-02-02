@@ -6,12 +6,14 @@ from typing import Dict, List, Set, Optional
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class AgentState(Enum):
     """
     The agent must operate using the following states only.
     No additional states are allowed.
     Defined in Bible IV, Section 1.
     """
+
     IDLE = "IDLE"
     RECEIVED_TASK = "RECEIVED_TASK"
     NORMALIZED = "NORMALIZED"
@@ -30,9 +32,12 @@ class AgentState(Enum):
     STOPPED_ERROR = "STOPPED_ERROR"
     COMPLETED = "COMPLETED"
 
+
 class TransitionError(Exception):
     """Raised when an invalid state transition is attempted."""
+
     pass
+
 
 class StateMachine:
     """
@@ -45,11 +50,18 @@ class StateMachine:
         AgentState.IDLE: {AgentState.RECEIVED_TASK},
         AgentState.RECEIVED_TASK: {AgentState.NORMALIZED},
         AgentState.NORMALIZED: {AgentState.CONTEXT_BUILDING, AgentState.STOPPED_SAFE},
-        AgentState.CONTEXT_BUILDING: {AgentState.CONTEXT_READY, AgentState.STOPPED_ERROR},
+        AgentState.CONTEXT_BUILDING: {
+            AgentState.CONTEXT_READY,
+            AgentState.STOPPED_ERROR,
+        },
         AgentState.CONTEXT_READY: {AgentState.PLANNING},
         AgentState.PLANNING: {AgentState.PLAN_VALIDATED, AgentState.STOPPED_SAFE},
         AgentState.PLAN_VALIDATED: {AgentState.EXECUTING_STEP},
-        AgentState.EXECUTING_STEP: {AgentState.STEP_COMPLETED, AgentState.STOPPED_ERROR, AgentState.TESTS_FAILED},
+        AgentState.EXECUTING_STEP: {
+            AgentState.STEP_COMPLETED,
+            AgentState.STOPPED_ERROR,
+            AgentState.TESTS_FAILED,
+        },
         AgentState.STEP_COMPLETED: {AgentState.TESTING},
         AgentState.TESTING: {AgentState.TESTS_PASSED, AgentState.TESTS_FAILED},
         AgentState.TESTS_PASSED: {AgentState.COMPLETED},
@@ -91,17 +103,21 @@ class StateMachine:
             logger.error(error_msg)
             # If we are already stopped or completed, further transitions are strictly forbidden per Bible IV Section 4.
             # If we are in a running state but attempt a forbidden move, we must transition to STOPPED_ERROR per Bible IV Section 4.
-            if self._current_state not in [AgentState.STOPPED_ERROR, AgentState.STOPPED_SAFE, AgentState.COMPLETED]:
-                 # Recursive call to stop safely on violation, but prevent infinite recursion if THAT fails (it shouldn't as any -> STOPPED_ERROR is not generally allowed, but here we force it as a penalty)
-                 # Actually, Bible IV Section 4 says "Violation -> STOPPED_ERROR".
-                 # But we can't transition to STOPPED_ERROR if we are in a state that doesn't allow it in the ALLOWED_TRANSITIONS table?
-                 # Wait, Bible IV Section 3 lists "Allowed" transitions.
-                 # Section 4 lists "Forbidden" ones and says "Violation -> STOPPED_ERROR".
-                 # This implies that if a violation occurs, the machine FORCEFULLY moves to STOPPED_ERROR.
-                 # However, if we are already in STOPPED_*, we cannot move.
-                 
-                 # Let's check if we are already terminal.
-                 pass
+            if self._current_state not in [
+                AgentState.STOPPED_ERROR,
+                AgentState.STOPPED_SAFE,
+                AgentState.COMPLETED,
+            ]:
+                # Recursive call to stop safely on violation, but prevent infinite recursion if THAT fails (it shouldn't as any -> STOPPED_ERROR is not generally allowed, but here we force it as a penalty)
+                # Actually, Bible IV Section 4 says "Violation -> STOPPED_ERROR".
+                # But we can't transition to STOPPED_ERROR if we are in a state that doesn't allow it in the ALLOWED_TRANSITIONS table?
+                # Wait, Bible IV Section 3 lists "Allowed" transitions.
+                # Section 4 lists "Forbidden" ones and says "Violation -> STOPPED_ERROR".
+                # This implies that if a violation occurs, the machine FORCEFULLY moves to STOPPED_ERROR.
+                # However, if we are already in STOPPED_*, we cannot move.
+
+                # Let's check if we are already terminal.
+                pass
 
             raise TransitionError(error_msg)
 
@@ -115,7 +131,9 @@ class StateMachine:
             return new_state in self.ALLOWED_TRANSITIONS[self._current_state]
         return False
 
-    def _log_transition(self, old_state: Optional[AgentState], new_state: AgentState, reason: str) -> None:
+    def _log_transition(
+        self, old_state: Optional[AgentState], new_state: AgentState, reason: str
+    ) -> None:
         """
         Logs the state transition.
         Bible IV, Section 8: Every state transition must log: Previous state, Next state, Timestamp, Reason.
@@ -124,10 +142,10 @@ class StateMachine:
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "previous_state": old_state.value if old_state else None,
             "next_state": new_state.value,
-            "reason": reason
+            "reason": reason,
         }
         self._execution_history.append(entry)
-        
+
         log_msg = f"TRANSITION: {entry['previous_state']} -> {entry['next_state']} | Reason: {reason}"
         logger.info(log_msg)
 
@@ -137,10 +155,16 @@ class StateMachine:
         Used when an invariant is violated or an unrecoverable error occurs.
         This bypasses the strict transition table for emergency stops, effectively implementing "Violation -> STOPPED_ERROR".
         """
-        if self._current_state in [AgentState.STOPPED_SAFE, AgentState.STOPPED_ERROR, AgentState.COMPLETED]:
-             # Already stopped, do nothing to preserve the original stop reason.
-             return
+        if self._current_state in [
+            AgentState.STOPPED_SAFE,
+            AgentState.STOPPED_ERROR,
+            AgentState.COMPLETED,
+        ]:
+            # Already stopped, do nothing to preserve the original stop reason.
+            return
 
         old_state = self._current_state
         self._current_state = AgentState.STOPPED_ERROR
-        self._log_transition(old_state, AgentState.STOPPED_ERROR, f"FORCED STOP: {reason}")
+        self._log_transition(
+            old_state, AgentState.STOPPED_ERROR, f"FORCED STOP: {reason}"
+        )

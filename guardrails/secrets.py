@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class DetectedSecret:
     def __init__(self, secret_type: str, redacted_value: str, context: str):
         self.secret_type = secret_type
@@ -13,12 +14,13 @@ class DetectedSecret:
     def __repr__(self):
         return f"<DetectedSecret type={self.secret_type}>"
 
+
 class SecretDetector:
     """
     Scans text for secrets using regex patterns.
     Bible V, Section 9: Secrets Handling
     """
-    
+
     # Regex patterns for common secrets
     PATTERNS = {
         "AWS Access Key": r"AKIA[0-9A-Z]{16}",
@@ -35,28 +37,30 @@ class SecretDetector:
         Values are redacted in the return object.
         """
         detected = []
-        
+
         for name, pattern in SecretDetector.PATTERNS.items():
             matches = re.finditer(pattern, text)
             for match in matches:
                 start, end = match.span()
                 matched_text = match.group(0)
-                
+
                 # Redact: keep first 2 chars, mask rest
                 if len(matched_text) > 4:
                     redacted = matched_text[:2] + "*" * (len(matched_text) - 2)
                 else:
                     redacted = "****"
-                
+
                 # Capture context
                 ctx_start = max(0, start - context_window)
                 ctx_end = min(len(text), end + context_window)
                 context = text[ctx_start:ctx_end]
-                
-                logger.critical(f"SECURITY: Secret detected! Type: {name} | Location: indices {start}-{end}")
-                
+
+                logger.critical(
+                    f"SECURITY: Secret detected! Type: {name} | Location: indices {start}-{end}"
+                )
+
                 detected.append(DetectedSecret(name, redacted, context))
-        
+
         return detected
 
     @staticmethod
@@ -67,7 +71,10 @@ class SecretDetector:
         """
         issues = SecretDetector.scan(text)
         if issues:
-            raise SecurityError(f"Found {len(issues)} secrets in content. Types: {[i.secret_type for i in issues]}")
+            raise SecurityError(
+                f"Found {len(issues)} secrets in content. Types: {[i.secret_type for i in issues]}"
+            )
+
 
 class SecurityError(Exception):
     pass

@@ -1,6 +1,7 @@
 import unittest
 from agent.state_machine import AgentState, StateMachine, TransitionError
 
+
 class TestStateMachine(unittest.TestCase):
     def setUp(self):
         self.sm = StateMachine()
@@ -19,7 +20,7 @@ class TestStateMachine(unittest.TestCase):
 
         self.sm.transition_to(AgentState.CONTEXT_BUILDING, "Building context")
         self.assertEqual(self.sm.current_state, AgentState.CONTEXT_BUILDING)
-        
+
         self.sm.transition_to(AgentState.CONTEXT_READY, "Context ready")
         self.assertEqual(self.sm.current_state, AgentState.CONTEXT_READY)
 
@@ -34,7 +35,7 @@ class TestStateMachine(unittest.TestCase):
 
         self.sm.transition_to(AgentState.STEP_COMPLETED, "Step done")
         self.assertEqual(self.sm.current_state, AgentState.STEP_COMPLETED)
-        
+
         self.sm.transition_to(AgentState.TESTING, "Running tests")
         self.assertEqual(self.sm.current_state, AgentState.TESTING)
 
@@ -48,7 +49,7 @@ class TestStateMachine(unittest.TestCase):
         # IDLE -> PLANNING is forbidden
         with self.assertRaises(TransitionError):
             self.sm.transition_to(AgentState.PLANNING, "Skipping ahead")
-        
+
         # EXECUTING_STEP -> PLANNING is explicitly forbidden
         self.sm._current_state = AgentState.EXECUTING_STEP
         with self.assertRaises(TransitionError):
@@ -62,7 +63,7 @@ class TestStateMachine(unittest.TestCase):
     def test_force_error_stop(self):
         self.sm.force_error_stop("Emergency stop")
         self.assertEqual(self.sm.current_state, AgentState.STOPPED_ERROR)
-        
+
         # Check reasons
         last_entry = self.sm._execution_history[-1]
         self.assertEqual(last_entry["next_state"], "STOPPED_ERROR")
@@ -72,5 +73,6 @@ class TestStateMachine(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.sm.transition_to(AgentState.RECEIVED_TASK, "")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

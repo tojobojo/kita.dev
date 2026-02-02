@@ -2,6 +2,7 @@
 Kita.dev Metrics Middleware
 Prometheus metrics for monitoring
 """
+
 import os
 import time
 from typing import Callable
@@ -14,7 +15,14 @@ ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 
 if ENABLE_METRICS:
     try:
-        from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+        from prometheus_client import (
+            Counter,
+            Histogram,
+            Gauge,
+            generate_latest,
+            CONTENT_TYPE_LATEST,
+        )
+
         PROMETHEUS_AVAILABLE = True
     except ImportError:
         PROMETHEUS_AVAILABLE = False
@@ -27,81 +35,68 @@ if PROMETHEUS_AVAILABLE:
     REQUEST_COUNT = Counter(
         "kita_http_requests_total",
         "Total HTTP requests",
-        ["method", "endpoint", "status"]
+        ["method", "endpoint", "status"],
     )
-    
+
     REQUEST_LATENCY = Histogram(
         "kita_http_request_duration_seconds",
         "HTTP request latency",
         ["method", "endpoint"],
-        buckets=[0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+        buckets=[0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0],
     )
-    
+
     # Task metrics
-    TASK_COUNT = Counter(
-        "kita_tasks_total",
-        "Total tasks processed",
-        ["status"]
-    )
-    
+    TASK_COUNT = Counter("kita_tasks_total", "Total tasks processed", ["status"])
+
     TASK_DURATION = Histogram(
         "kita_task_duration_seconds",
         "Task processing duration",
         ["final_state"],
-        buckets=[1, 5, 10, 30, 60, 120, 300, 600]
+        buckets=[1, 5, 10, 30, 60, 120, 300, 600],
     )
-    
-    TOKEN_USAGE = Counter(
-        "kita_tokens_total",
-        "Total tokens used",
-        ["model"]
-    )
-    
-    ACTIVE_TASKS = Gauge(
-        "kita_active_tasks",
-        "Currently running tasks"
-    )
+
+    TOKEN_USAGE = Counter("kita_tokens_total", "Total tokens used", ["model"])
+
+    ACTIVE_TASKS = Gauge("kita_active_tasks", "Currently running tasks")
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):
     """Middleware for collecting Prometheus metrics."""
-    
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         if not PROMETHEUS_AVAILABLE:
             return await call_next(request)
-        
+
         start_time = time.time()
-        
+
         # Normalize endpoint for metrics (avoid high cardinality)
         endpoint = self._normalize_endpoint(request.url.path)
-        
+
         # Process request
         response = await call_next(request)
-        
+
         # Record metrics
         duration = time.time() - start_time
-        
+
         REQUEST_COUNT.labels(
-            method=request.method,
-            endpoint=endpoint,
-            status=str(response.status_code)
+            method=request.method, endpoint=endpoint, status=str(response.status_code)
         ).inc()
-        
-        REQUEST_LATENCY.labels(
-            method=request.method,
-            endpoint=endpoint
-        ).observe(duration)
-        
+
+        REQUEST_LATENCY.labels(method=request.method, endpoint=endpoint).observe(
+            duration
+        )
+
         return response
-    
+
     def _normalize_endpoint(self, path: str) -> str:
         """Normalize path to reduce cardinality."""
         # Replace UUIDs with placeholder
         import re
+
         path = re.sub(
-            r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
-            '{id}',
-            path
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+            "{id}",
+            path,
         )
         return path
 
@@ -110,11 +105,8 @@ def get_metrics_response() -> Response:
     """Generate Prometheus metrics response."""
     if not PROMETHEUS_AVAILABLE:
         return Response(content="Metrics not available", status_code=503)
-    
-    return Response(
-        content=generate_latest(),
-        media_type=CONTENT_TYPE_LATEST
-    )
+
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 # Helper functions for task metrics

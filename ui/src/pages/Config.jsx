@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getConfig, updateConfig } from '../services/api';
+import { getConfig } from '../services/api';
 import './Config.css';
 
 function ConfigItem({ path, value, depth = 0 }) {

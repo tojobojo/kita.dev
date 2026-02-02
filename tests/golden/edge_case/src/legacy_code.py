@@ -8,6 +8,7 @@ x = 42
 y = "magic"
 z = None
 
+
 def f(a, b=None, *args, **kwargs):
     # something happens here
     global x, y, z
@@ -19,9 +20,11 @@ def f(a, b=None, *args, **kwargs):
         x += i
     return x
 
+
 def g():
     # ???
     return f(1, 2, 3, 4, 5)
+
 
 def h(n):
     # recursive maybe?
@@ -29,18 +32,20 @@ def h(n):
         return z
     return h(n - 1)
 
+
 class Thing:
     def __init__(self):
         self.a = 1
         self.b = 2
-    
+
     def do(self):
         # does something
         pass
-    
+
     def other(self, x):
         # also does something
         return x * self.a + self.b
+
 
 # more stuff below
 # TODO: cleanup
@@ -48,12 +53,13 @@ class Thing:
 # HACK: temporary
 # NOTE: important?
 
+
 def process(data):
     # processes data somehow
     result = []
     for item in data:
         if isinstance(item, dict):
-            result.append(item.get('value', 0))
+            result.append(item.get("value", 0))
         elif isinstance(item, list):
             result.extend(process(item))
         else:

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 """Quick verification script for Phase 1 and 2 implementations."""
+
 import sys
-sys.path.insert(0, '.')
+
+sys.path.insert(0, ".")
 
 print("Testing Phase 1 & 2 implementations...")
 
@@ -12,6 +14,7 @@ try:
     from context.summarizer import ContextSummarizer
     from context.symbols import SymbolExtractor
     from context.language_detector import LanguageDetector
+
     print("   ✓ Context module imports OK")
 except Exception as e:
     print(f"   ✗ Context module import failed: {e}")
@@ -21,6 +24,7 @@ except Exception as e:
 print("\n2. Testing guardrails imports...")
 try:
     from guardrails.validators import TaskValidator, PlanValidator, OutputValidator
+
     print("   ✓ Guardrails imports OK")
 except Exception as e:
     print(f"   ✗ Guardrails import failed: {e}")
@@ -30,6 +34,7 @@ except Exception as e:
 print("\n3. Testing LLM client with budget tracker...")
 try:
     from llm.client import BudgetTracker, MockLLMClient, TokenUsage
+
     tracker = BudgetTracker(budget=10000)
     client = MockLLMClient()
     client.set_budget_tracker(tracker)
@@ -58,7 +63,9 @@ print("\n5. Testing language detector...")
 try:
     detector = LanguageDetector()
     result = detector.detect(".")
-    print(f"   ✓ Language detected: {result.primary_language} (supported: {result.supported})")
+    print(
+        f"   ✓ Language detected: {result.primary_language} (supported: {result.supported})"
+    )
 except Exception as e:
     print(f"   ✗ Language detector failed: {e}")
     sys.exit(1)
@@ -94,14 +101,16 @@ except Exception as e:
 print("\n8. Testing controller integration...")
 try:
     import os
+
     os.environ["USE_MOCK_LLM"] = "true"
     from agent.controller import AgentController
+
     controller = AgentController()
     print("   ✓ Controller instantiation OK")
 except Exception as e:
     print(f"   ✗ Controller integration failed: {e}")
     sys.exit(1)
 
-print("\n" + "="*50)
+print("\n" + "=" * 50)
 print("All Phase 1 & 2 tests PASSED!")
-print("="*50)
+print("=" * 50)

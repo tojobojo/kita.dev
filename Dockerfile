@@ -10,9 +10,9 @@ FROM node:20-alpine AS ui-builder
 
 WORKDIR /app/ui
 
-# Install dependencies first (better caching)
+# Install dependencies (including dev deps for build)
 COPY ui/package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy UI source and build
 COPY ui/ ./

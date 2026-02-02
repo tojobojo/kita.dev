@@ -2,25 +2,27 @@ from dataclasses import dataclass
 from typing import Optional
 import re
 
+
 @dataclass
 class Command:
     trigger: str
     action: str
     args: Optional[str] = None
 
+
 class CommandParser:
     """
     Bible VI, Section 2: Command Grammar
     Enforces strict, exact command matching.
     """
-    
+
     # Strictly supported triggers
     VALID_COMMANDS = {
         "@kita implement this": "IMPLEMENT",
         "@kita retry": "RETRY",
         "@kita retry with constraints": "RETRY_CONSTRAINED",
         "@kita explain plan": "EXPLAIN",
-        "@kita stop": "STOP"
+        "@kita stop": "STOP",
     }
 
     def parse(self, comment_body: str) -> Optional[Command]:
@@ -31,15 +33,15 @@ class CommandParser:
         """
         if not comment_body:
             return None
-            
+
         cleaned = comment_body.strip().lower()
-        
+
         # Check for strict matches
         for valid_cmd, action in self.VALID_COMMANDS.items():
             if cleaned == valid_cmd:
                 return Command(trigger=valid_cmd, action=action)
             # Check for arguments if command supports it (e.g. constraints)
-            # Bible VI says "Commands must be exact". 
+            # Bible VI says "Commands must be exact".
             # "Natural language variants are invalid".
             # Does "@kita implement this <task>" exist?
             # Bible VI Section 2 list:
@@ -54,12 +56,12 @@ class CommandParser:
             # It lists literals.
             # But "Rules: Commands must be exact".
             # Assumption: The *Issue Body* is the task, and the comment triggers it.
-            # OR the comment IS the task? 
+            # OR the comment IS the task?
             # "Only the following commands are valid: @kita implement this".
             # This strongly implies the task is elsewhere (the strict literal triggers it).
             # If the user wants to give a NEW task in a comment, is that supported?
             # "Invalid commands -> clarification or STOP".
-            # Let's implement strict literal matching first. 
+            # Let's implement strict literal matching first.
             pass
 
         return None

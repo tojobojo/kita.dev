@@ -9,24 +9,62 @@ Explicit definition of what is allowed and what is forbidden.
 # This list is MINIMAL.
 COMMAND_ALLOWLIST: Set[str] = {
     # Python
-    "python", "python3", "pip", "pytest", "pylint",
-    
+    "python",
+    "python3",
+    "pip",
+    "pytest",
+    "pylint",
     # Node/JS (if we support it later, keeping for now as per V0 spec allows JS)
-    "node", "npm", "yarn", "pnpm", "eslint",
-    
+    "node",
+    "npm",
+    "yarn",
+    "pnpm",
+    "eslint",
     # Basic utilities
-    "ls", "dir", "cat", "echo", "grep", "find", "wc", "head", "tail", "pwd",
-    "mkdir", "rm", "cp", "mv", "touch", "chmod", "date"
+    "ls",
+    "dir",
+    "cat",
+    "echo",
+    "grep",
+    "find",
+    "wc",
+    "head",
+    "tail",
+    "pwd",
+    "mkdir",
+    "rm",
+    "cp",
+    "mv",
+    "touch",
+    "chmod",
+    "date",
 }
 
 # Commands explicitly forbidden (for fast-fail, though undefined commands are also blocked)
 FORBIDDEN_COMMANDS: Set[str] = {
-    "curl", "wget", "scp", "ssh", "ftp", "telnet", "nc", "ncat",  # Network
-    "sudo", "su",  # Privilege
-    "apt", "apt-get", "yum", "apk", "dnf",  # System packages
-    "docker", "podman", "kubectl",  # Orchestration
-    "reboot", "shutdown", "init"  # System control
+    "curl",
+    "wget",
+    "scp",
+    "ssh",
+    "ftp",
+    "telnet",
+    "nc",
+    "ncat",  # Network
+    "sudo",
+    "su",  # Privilege
+    "apt",
+    "apt-get",
+    "yum",
+    "apk",
+    "dnf",  # System packages
+    "docker",
+    "podman",
+    "kubectl",  # Orchestration
+    "reboot",
+    "shutdown",
+    "init",  # System control
 }
+
 
 def is_command_allowed(command_line: str) -> bool:
     """
@@ -35,13 +73,13 @@ def is_command_allowed(command_line: str) -> bool:
     """
     if not command_line or not command_line.strip():
         return False
-        
+
     parts = command_line.strip().split()
     if not parts:
         return False
-    
+
     executable = parts[0]
-    
+
     # 1. Check strict equality against allowlist
     # We might allow absolute paths /usr/bin/python later, but for now strict.
     if executable not in COMMAND_ALLOWLIST:
@@ -56,6 +94,6 @@ def is_command_allowed(command_line: str) -> bool:
     # Bible V Section 6 forbid "shell chaining"
     forbidden_chars = [";", "&&", "||", "|", "`", "$("]
     if any(char in command_line for char in forbidden_chars):
-         return False
+        return False
 
     return True
