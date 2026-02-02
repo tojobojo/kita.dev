@@ -210,12 +210,17 @@ class PRBuilder:
             return PRResult(success=False, error=f"Validation errors: {errors}")
         
         try:
-            # This would use the GitHub API
-            # For V0, we mock the response
+            # Real API Call
             logger.info(f"Creating PR: {spec.title} ({spec.head_branch} -> {spec.base_branch})")
             
-            # Mock PR creation
-            pr_number = 123  # Would come from API response
+            pr_number = self.client.create_pr(
+                title=spec.title,
+                body=spec.body,
+                head=spec.head_branch,
+                base=spec.base_branch,
+                repo_full_name=repo_full_name
+            )
+            
             pr_url = f"https://github.com/{repo_full_name}/pull/{pr_number}"
             
             return PRResult(

@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 from typing import Optional
 
@@ -172,15 +173,34 @@ class AgentController:
             if self.state_machine.current_state == AgentState.STEP_COMPLETED:
                 self.state_machine.transition_to(AgentState.TESTING, "Running final verification")
                 
-                # Mock Test Runner
-                # In real life: sandbox.run_tests()
-                tests_passed = True # Mock
+                # Auto-detect test command
+                test_cmd = "echo 'No tests detected, assuming success'"
+                tests_dir = os.path.join(repo_path, "tests")
+                package_json = os.path.join(repo_path, "package.json")
+                
+                if os.path.exists(tests_dir):
+                    test_cmd = "pytest"
+                elif os.path.exists(package_json):
+                    test_cmd = "npm test"
+                
+                logger.info(f"Running verification with: {test_cmd}")
+                
+                # Execute in sandbox
+                from sandbox.executor import SandboxExecutor
+                from sandbox.limits import ResourceLimits
+                
+                sandbox = SandboxExecutor()
+                # Use generous timeout for tests (5 mins)
+                result = sandbox.run(test_cmd, repo_path, limits=ResourceLimits(timeout_seconds=300))
+                
+                tests_passed = (result.exit_code == 0)
+                logger.info(f"Verification finished. Exit code: {result.exit_code}. Output: {result.stdout[:200]}...")
                 
                 if tests_passed:
                     self.state_machine.transition_to(AgentState.TESTS_PASSED, "All tests passed")
                     self.state_machine.transition_to(AgentState.COMPLETED, "Task successfully finished")
                 else:
-                    self.state_machine.transition_to(AgentState.TESTS_FAILED, "Verification failed")
+                    self.state_machine.transition_to(AgentState.TESTS_FAILED, f"Verification failed: {result.stderr[:100]}")
                     self.state_machine.transition_to(AgentState.REFLECTING, "Analyzing test failure")
                     # ... Reflection loop could happen here too ...
                     self.state_machine.transition_to(AgentState.STOPPED_SAFE, "Tests failed after execution")

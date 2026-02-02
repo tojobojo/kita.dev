@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Set, Optional
 
 # Configure logging
@@ -121,7 +121,7 @@ class StateMachine:
         Bible IV, Section 8: Every state transition must log: Previous state, Next state, Timestamp, Reason.
         """
         entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "previous_state": old_state.value if old_state else None,
             "next_state": new_state.value,
             "reason": reason

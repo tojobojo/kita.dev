@@ -32,8 +32,7 @@ class AgentExecutor:
             
             logger.info(f"EXECUTING STEP {step.id}: {step.description}")
             
-            # Dispatch based on action type (Mocking dispatch for skeleton)
-            # Dispatch based on action type (Mocking dispatch for skeleton)
+            # Dispatch based on action type
             if step.action_type == "COMMAND":
                 return self._execute_command_step(step, repo_path)
             elif step.action_type == "EDIT":
@@ -48,7 +47,6 @@ class AgentExecutor:
         from sandbox.executor import SandboxExecutor
         
         sandbox = SandboxExecutor()
-        # In V0 we mock the limit, later pass from config
         result = sandbox.run(step.target, repo_path)
         
         return ExecutionResult(

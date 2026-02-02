@@ -102,6 +102,10 @@ manager = JobManager()
 class RunRequest(BaseModel):
     task: str
     repo_path: str
+    # BYOK: Bring Your Own Key (optional - uses server key if not provided)
+    openai_api_key: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    model: Optional[str] = None  # e.g. "gpt-4-turbo", "claude-3-opus"
 
 class JobStatusResponse(BaseModel):
     job_id: str
@@ -110,15 +114,39 @@ class JobStatusResponse(BaseModel):
     execution_steps: List[Dict]
 
 # Background Task Wrapper
-def run_agent_in_thread(job_id: str, task: str, repo_path: str):
+def run_agent_in_thread(job_id: str, task: str, repo_path: str, 
+                        byok_openai: str = None, byok_anthropic: str = None, model: str = None):
     logger.info(f"Starting job {job_id} for task: {task}")
     controller = manager.get_controller(job_id)
     if controller:
         try:
-            final_state = controller.run(task, repo_path)
-            manager.results[job_id] = final_state.value
-            manager.record_task(job_id, task, repo_path, final_state.value)
-            logger.info(f"Job {job_id} finished with state: {final_state}")
+            # BYOK: Temporarily set user-provided keys
+            original_openai = os.environ.get("OPENAI_API_KEY")
+            original_anthropic = os.environ.get("ANTHROPIC_API_KEY")
+            
+            if byok_openai:
+                os.environ["OPENAI_API_KEY"] = byok_openai
+                logger.info(f"Job {job_id} using BYOK OpenAI key")
+            if byok_anthropic:
+                os.environ["ANTHROPIC_API_KEY"] = byok_anthropic
+                logger.info(f"Job {job_id} using BYOK Anthropic key")
+            
+            try:
+                final_state = controller.run(task, repo_path)
+                manager.results[job_id] = final_state.value
+                manager.record_task(job_id, task, repo_path, final_state.value)
+                logger.info(f"Job {job_id} finished with state: {final_state}")
+            finally:
+                # Restore original keys
+                if original_openai:
+                    os.environ["OPENAI_API_KEY"] = original_openai
+                elif byok_openai:
+                    os.environ.pop("OPENAI_API_KEY", None)
+                if original_anthropic:
+                    os.environ["ANTHROPIC_API_KEY"] = original_anthropic
+                elif byok_anthropic:
+                    os.environ.pop("ANTHROPIC_API_KEY", None)
+                    
         except Exception as e:
             logger.error(f"Job {job_id} crashed: {e}")
             manager.results[job_id] = "CRASHED"
@@ -136,16 +164,27 @@ async def health_check():
 @app.post("/agent/run")
 async def run_agent(request: RunRequest):
     """
-    Submits a task to the agent. returns a Job ID.
+    Submits a task to the agent. Returns a Job ID.
     Job runs in the background.
+    
+    BYOK Support: Optionally pass `openai_api_key` or `anthropic_api_key`
+    to use your own keys instead of server-managed keys.
     """
     job_id = manager.create_job()
     
     # Record task as started
     manager.record_task(job_id, request.task, request.repo_path)
     
-    # Submit to thread pool
-    manager.executor.submit(run_agent_in_thread, job_id, request.task, request.repo_path)
+    # Submit to thread pool with BYOK support
+    manager.executor.submit(
+        run_agent_in_thread, 
+        job_id, 
+        request.task, 
+        request.repo_path,
+        request.openai_api_key,
+        request.anthropic_api_key,
+        request.model
+    )
     
     return {"job_id": job_id, "status": "submitted"}
 
@@ -211,9 +250,30 @@ from fastapi.responses import HTMLResponse
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard():
-    """Serve the dashboard UI."""
-    from web.dashboard import get_inline_dashboard_html
-    return HTMLResponse(content=get_inline_dashboard_html())
+    """Serve the dashboard UI (redirects to React UI in production)."""
+    # In production, static files serve the React UI
+    # This is a fallback for API-only mode
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kita.dev Dashboard</title>
+    <style>
+        body { font-family: system-ui; background: #1a1a2e; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { text-align: center; }
+        h1 { color: #00d4ff; }
+        a { color: #00d4ff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Kita.dev</h1>
+        <p>API is running. <a href="/docs">View API Docs</a></p>
+        <p>For full dashboard, run the React UI: <code>cd ui && npm run dev</code></p>
+    </div>
+</body>
+</html>
+""")
 
 # --- Metrics Endpoint ---
 

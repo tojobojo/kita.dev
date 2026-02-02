@@ -51,7 +51,6 @@ COPY guardrails/ ./guardrails/
 COPY llm/ ./llm/
 COPY prompts/ ./prompts/
 COPY sandbox/ ./sandbox/
-COPY web/ ./web/
 COPY main.py ./
 
 # Copy built React UI to static directory

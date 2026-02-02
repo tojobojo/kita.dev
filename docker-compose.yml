@@ -87,6 +87,53 @@ services:
     profiles:
       - sandbox # Only runs when explicitly needed
 
+  # ---------------------------------------------------------------------------
+  # PostgreSQL (Optional - for persistent storage)
+  # ---------------------------------------------------------------------------
+  # Usage: docker-compose --profile db up
+  postgres:
+    image: postgres:16-alpine
+    container_name: kita-postgres
+    environment:
+      - POSTGRES_USER=kita
+      - POSTGRES_PASSWORD=kita_dev_password
+      - POSTGRES_DB=kita
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U kita" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kita-network
+    profiles:
+      - db # Only runs with: docker-compose --profile db up
+
+  # ---------------------------------------------------------------------------
+  # Redis (Optional - for job queue)
+  # ---------------------------------------------------------------------------
+  # Usage: docker-compose --profile queue up
+  redis:
+    image: redis:7-alpine
+    container_name: kita-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kita-network
+    profiles:
+      - queue # Only runs with: docker-compose --profile queue up
+
 # -----------------------------------------------------------------------------
 # Networks
 # -----------------------------------------------------------------------------
@@ -99,4 +146,8 @@ networks:
 # -----------------------------------------------------------------------------
 volumes:
   sandbox-workspace:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
     driver: local
